@@ -1,0 +1,20 @@
+{
+  "appId": "com.decideit.app",
+  "appName": "帮你决定",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#6c5ce7",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#6c5ce7"
+    }
+  }
+}
