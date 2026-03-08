@@ -8,6 +8,7 @@ export function haptic(type = 'light') {
     success: [10, 50, 20],
     dice: [15, 30, 15, 30, 15],
     spin: [10, 20, 10, 20, 10, 20, 10, 20, 30],
+    slot: [15, 15, 15, 15, 15, 15, 30],
     flip: [5, 40, 15],
   }
 

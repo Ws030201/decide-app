@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Dice5, Hash, Club, CircleDot } from 'lucide-react'
+import { Dice5, Hash, Club, CircleDot, UtensilsCrossed } from 'lucide-react'
 import DiceRoller from '../components/tools/DiceRoller'
 import RandomNumber from '../components/tools/RandomNumber'
 import CardDraw from '../components/tools/CardDraw'
 import SpinWheel from '../components/tools/SpinWheel'
+import SlotMachine from '../components/tools/SlotMachine'
 import { haptic } from '../utils/haptic'
 
 const tools = [
+  { id: 'slot', label: '吃啥', icon: UtensilsCrossed, color: 'from-sunny to-accent' },
   { id: 'dice', label: '骰子', icon: Dice5, color: 'from-primary to-primary-light' },
   { id: 'wheel', label: '转盘', icon: CircleDot, color: 'from-accent to-accent-light' },
   { id: 'random', label: '随机数', icon: Hash, color: 'from-sky to-primary-light' },
@@ -14,7 +16,7 @@ const tools = [
 ]
 
 export default function Tools() {
-  const [activeTool, setActiveTool] = useState('dice')
+  const [activeTool, setActiveTool] = useState('slot')
 
   const handleTabChange = (id) => {
     haptic('light')
@@ -23,11 +25,12 @@ export default function Tools() {
 
   const renderTool = () => {
     switch (activeTool) {
+      case 'slot': return <SlotMachine />
       case 'dice': return <DiceRoller />
       case 'wheel': return <SpinWheel />
       case 'random': return <RandomNumber />
       case 'card': return <CardDraw />
-      default: return <DiceRoller />
+      default: return <SlotMachine />
     }
   }
 
