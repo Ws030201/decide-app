@@ -2,9 +2,10 @@ import { useState } from 'react'
 import BottomNav from './components/BottomNav'
 import Home from './pages/Home'
 import Plan from './pages/Plan'
+import Party from './pages/Party'
 import Tools from './pages/Tools'
 
-const tabs = ['home', 'plan', 'tools']
+const tabs = ['home', 'plan', 'party', 'tools']
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
@@ -13,6 +14,7 @@ export default function App() {
     switch (activeTab) {
       case 'home': return <Home onNavigate={setActiveTab} />
       case 'plan': return <Plan />
+      case 'party': return <Party />
       case 'tools': return <Tools />
       default: return <Home onNavigate={setActiveTab} />
     }

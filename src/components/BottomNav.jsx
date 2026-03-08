@@ -1,8 +1,9 @@
-import { Home, Brain, Wrench } from 'lucide-react'
+import { Home, Brain, PartyPopper, Wrench } from 'lucide-react'
 
 const navItems = [
   { id: 'home', label: '首页', icon: Home },
   { id: 'plan', label: 'MBTI规划', icon: Brain },
+  { id: 'party', label: '聚会', icon: PartyPopper },
   { id: 'tools', label: '小工具', icon: Wrench },
 ]
 
