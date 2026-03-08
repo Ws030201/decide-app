@@ -8,24 +8,24 @@ const RED_SUITS = new Set(['♥', '♦'])
 
 const RULES = {
   'A': { name: '指名道姓', desc: '指定一人喝酒！', emoji: '👆', color: 'from-violet-500 to-purple-600' },
-  '2': { name: '桃园结义', desc: '再拉两人，三人共饮！', emoji: '🍑', color: 'from-pink-500 to-rose-600' },
+  '2': { name: '小姐陪', desc: '持续效果：别人喝酒你必须陪饮！', emoji: '👸', color: 'from-rose-500 to-pink-600', isStatus: true, statusGroup: 'lady' },
   '3': { name: '逛三园', desc: '选一类事物开始接龙，说不出的喝！', emoji: '🏞️', color: 'from-emerald-500 to-green-600' },
-  '4': { name: '摸鼻子', desc: '所有人摸鼻子！最后一个摸的喝！', emoji: '👃', color: 'from-amber-500 to-yellow-600' },
-  '5': { name: '照相机', desc: '持续效果：你看谁谁就得喝！', emoji: '📸', color: 'from-cyan-500 to-blue-600', isStatus: true },
-  '6': { name: '左边喝', desc: '你左手边的人喝酒！', emoji: '⬅️', color: 'from-blue-500 to-indigo-600' },
+  '4': { name: 'PK牌', desc: '指定一人与你猜拳PK，输的喝！', emoji: '⚔️', color: 'from-amber-500 to-orange-600' },
+  '5': { name: '照相机', desc: '持续效果：你看谁谁就得喝！', emoji: '📸', color: 'from-cyan-500 to-blue-600', isStatus: true, statusGroup: 'general' },
+  '6': { name: '柳树扭一扭', desc: '所有人扭起来！最后停下的人喝！', emoji: '🌿', color: 'from-green-500 to-emerald-600' },
   '7': { name: '逢七过', desc: '从1开始报数，逢7或7的倍数喊"过"！', emoji: '7️⃣', color: 'from-teal-500 to-cyan-600' },
   '8': { name: '厕所牌', desc: '获得一张免罚金牌！自动存入库存。', emoji: '🚽', color: 'from-lime-500 to-green-600', isInventory: true },
   '9': { name: '自己喝', desc: '没什么好说的，自罚一杯！', emoji: '🍺', color: 'from-orange-500 to-red-600' },
-  '10': { name: '神经病', desc: '持续效果：随时可以指人喝酒！', emoji: '🤪', color: 'from-fuchsia-500 to-pink-600', isStatus: true },
+  '10': { name: '神经病', desc: '持续效果：随时可以指人喝酒！', emoji: '🤪', color: 'from-fuchsia-500 to-pink-600', isStatus: true, statusGroup: 'general' },
   'J': { name: '左边喝', desc: '你左手边的人喝酒！', emoji: '⬅️', color: 'from-blue-500 to-indigo-600' },
-  'Q': { name: '小姐牌', desc: '持续效果：别人喝酒你必须陪饮！', emoji: '👸', color: 'from-rose-500 to-pink-600', isStatus: true },
-  'K': { name: '制定规则', desc: '你就是法律！制定一条新规则！', emoji: '👑', color: 'from-yellow-500 to-amber-600' },
+  'Q': { name: '右边喝', desc: '你右手边的人喝酒！', emoji: '➡️', color: 'from-indigo-500 to-blue-600' },
+  'K': { name: '定酒牌', desc: '你就是法律！制定一条喝酒规则！', emoji: '🍶', color: 'from-yellow-500 to-amber-600' },
 }
 
-const STATUS_MAP = {
+const STATUS_INFO = {
   '5': { type: 'camera', name: '照相机' },
   '10': { type: 'crazy', name: '神经病' },
-  'Q': { type: 'lady', name: '小姐牌' },
+  '2': { type: 'lady', name: '小姐陪' },
 }
 
 function createDeck() {
@@ -50,41 +50,107 @@ function fisherYatesShuffle(arr) {
 function playSound(type) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
+    const now = ctx.currentTime
 
-    if (type === 'alert') {
-      osc.type = 'square'
-      osc.frequency.value = 880
-      gain.gain.value = 0.25
-      osc.start()
-      setTimeout(() => { osc.frequency.value = 660 }, 150)
-      setTimeout(() => { osc.frequency.value = 880 }, 300)
-      setTimeout(() => { osc.stop(); ctx.close() }, 450)
-    } else if (type === 'flip') {
+    if (type === 'flip') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
       osc.type = 'sine'
-      osc.frequency.value = 523
-      gain.gain.value = 0.12
-      osc.start()
-      setTimeout(() => { osc.frequency.value = 784 }, 80)
-      setTimeout(() => { osc.stop(); ctx.close() }, 160)
-    } else if (type === 'newround') {
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(300, now)
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15)
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25)
+      osc.start(now)
+      osc.stop(now + 0.25)
+      const chime = ctx.createOscillator()
+      const chimeG = ctx.createGain()
+      chime.type = 'sine'
+      chime.connect(chimeG)
+      chimeG.connect(ctx.destination)
+      chime.frequency.value = 880
+      chimeG.gain.setValueAtTime(0.1, now + 0.12)
+      chimeG.gain.exponentialRampToValueAtTime(0.01, now + 0.4)
+      chime.start(now + 0.12)
+      chime.stop(now + 0.4)
+      setTimeout(() => ctx.close(), 500)
+    }
+    else if (type === 'alert') {
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'square'
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        const t = now + i * 0.2
+        osc.frequency.setValueAtTime(880, t)
+        osc.frequency.setValueAtTime(660, t + 0.1)
+        gain.gain.setValueAtTime(0.2, t)
+        gain.gain.setValueAtTime(0.15, t + 0.1)
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.19)
+        osc.start(t)
+        osc.stop(t + 0.2)
+      }
+      setTimeout(() => ctx.close(), 800)
+    }
+    else if (type === 'status') {
+      const notes = [523, 659, 784, 1047]
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'triangle'
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        const t = now + i * 0.08
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.12, t)
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15)
+        osc.start(t)
+        osc.stop(t + 0.2)
+      })
+      setTimeout(() => ctx.close(), 600)
+    }
+    else if (type === 'newround') {
+      const notes = [392, 523, 659, 784]
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        const t = now + i * 0.12
+        osc.frequency.value = freq
+        gain.gain.setValueAtTime(0.2, t)
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3)
+        osc.start(t)
+        osc.stop(t + 0.35)
+      })
+      setTimeout(() => ctx.close(), 800)
+    }
+    else if (type === 'toilet') {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
       osc.type = 'sine'
-      osc.frequency.value = 440
-      gain.gain.value = 0.18
-      osc.start()
-      setTimeout(() => { osc.frequency.value = 554 }, 150)
-      setTimeout(() => { osc.frequency.value = 659 }, 300)
-      setTimeout(() => { osc.stop(); ctx.close() }, 500)
-    } else if (type === 'status') {
-      osc.type = 'triangle'
-      osc.frequency.value = 600
-      gain.gain.value = 0.15
-      osc.start()
-      setTimeout(() => { osc.frequency.value = 800 }, 100)
-      setTimeout(() => { osc.stop(); ctx.close() }, 200)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(800, now)
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.3)
+      gain.gain.setValueAtTime(0.2, now)
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35)
+      osc.start(now)
+      osc.stop(now + 0.35)
+      const pop = ctx.createOscillator()
+      const popG = ctx.createGain()
+      pop.type = 'sine'
+      pop.connect(popG)
+      popG.connect(ctx.destination)
+      pop.frequency.value = 1200
+      popG.gain.setValueAtTime(0.15, now + 0.15)
+      popG.gain.exponentialRampToValueAtTime(0.01, now + 0.25)
+      pop.start(now + 0.15)
+      pop.stop(now + 0.3)
+      setTimeout(() => ctx.close(), 500)
     }
   } catch { /* unsupported browser */ }
 }
@@ -112,10 +178,34 @@ function ToastLayer({ toasts }) {
   )
 }
 
+// ─── Duration Control Widget ───
+function DurationControl({ label, detail, value, onChange }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-text">{label}</p>
+        <p className="text-[10px] text-text-secondary mt-0.5 leading-relaxed">{detail}</p>
+      </div>
+      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+        <button
+          onClick={() => onChange(Math.max(1, value - 1))}
+          className="w-8 h-8 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform shadow-sm"
+        >−</button>
+        <span className="text-2xl font-black text-primary w-7 text-center">{value}</span>
+        <button
+          onClick={() => onChange(Math.min(10, value + 1))}
+          className="w-8 h-8 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform shadow-sm"
+        >+</button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Setup Phase Component ───
 function SetupPhase({ onStart }) {
   const [playerNames, setPlayerNames] = useState(['', '', ''])
-  const [statusDuration, setStatusDuration] = useState(3)
+  const [generalDuration, setGeneralDuration] = useState(3)
+  const [ladyDuration, setLadyDuration] = useState(3)
 
   const addPlayer = () => setPlayerNames(prev => [...prev, ''])
   const removePlayer = (idx) => {
@@ -130,7 +220,7 @@ function SetupPhase({ onStart }) {
     const names = playerNames.map(n => n.trim()).filter(Boolean)
     if (names.length < 2) return
     if (new Set(names).size !== names.length) return
-    onStart(names, statusDuration)
+    onStart(names, generalDuration, ladyDuration)
   }
 
   const validNames = playerNames.map(n => n.trim()).filter(Boolean)
@@ -186,32 +276,21 @@ function SetupPhase({ onStart }) {
         )}
       </div>
 
-      {/* Status duration setting */}
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-bold text-text">⏱️ 状态牌有效圈数</p>
-            <p className="text-[10px] text-text-secondary mt-1 leading-relaxed">
-              📸照相机 / 🤪神经病 / 👸小姐牌<br/>
-              经过此圈数后自动失效并提醒
-            </p>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setStatusDuration(d => Math.max(1, d - 1))}
-              className="w-8 h-8 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform shadow-sm"
-            >
-              −
-            </button>
-            <span className="text-2xl font-black text-primary w-7 text-center">{statusDuration}</span>
-            <button
-              onClick={() => setStatusDuration(d => Math.min(10, d + 1))}
-              className="w-8 h-8 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform shadow-sm"
-            >
-              +
-            </button>
-          </div>
-        </div>
+      {/* Duration settings */}
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100 space-y-4">
+        <DurationControl
+          label="📸🤪 照相机 / 神经病"
+          detail="按你自己的回合计圈，经过此圈数后失效"
+          value={generalDuration}
+          onChange={setGeneralDuration}
+        />
+        <div className="border-t border-purple-100/60" />
+        <DurationControl
+          label="👸 小姐陪"
+          detail="按你自己的回合计圈，经过此圈数后失效"
+          value={ladyDuration}
+          onChange={setLadyDuration}
+        />
       </div>
 
       {/* Start button */}
@@ -244,12 +323,10 @@ function PlayingCard({ card, isFlipped, onDraw }) {
                 key={i}
                 className="absolute text-white/20 text-xl font-bold"
                 style={{ top: `${(i % 4) * 30 + 10}%`, left: `${Math.floor(i / 4) * 35 + 5}%`, transform: `rotate(${i * 30}deg)` }}
-              >
-                ♠♥♦♣
-              </div>
+              >♠♥♦♣</div>
             ))}
           </div>
-          <div className="w-[82%] h-[85%] rounded-xl border-2 border-white/20 flex items-center justify-center relative">
+          <div className="w-[82%] h-[85%] rounded-xl border-2 border-white/20 flex items-center justify-center">
             <div className="text-center">
               <span className="text-5xl drop-shadow-lg">🃏</span>
               <p className="text-white/60 text-xs mt-3 font-semibold tracking-wider">点击抽牌</p>
@@ -266,9 +343,7 @@ function PlayingCard({ card, isFlipped, onDraw }) {
                 <span className="text-lg ml-0.5">{card.suit}</span>
               </div>
               <div className="flex-1 flex items-center justify-center">
-                <span className={`text-7xl ${suitColor} drop-shadow-sm`}>
-                  {card.suit}
-                </span>
+                <span className={`text-7xl ${suitColor} drop-shadow-sm`}>{card.suit}</span>
               </div>
               <div className={`text-right leading-none ${suitColor}`}>
                 <span className="text-lg mr-0.5">{card.suit}</span>
@@ -310,7 +385,7 @@ function RuleBanner({ rule }) {
 }
 
 // ─── Player Status Panel Component ───
-function PlayerPanel({ players, currentIdx, toilets, activeStatuses, currentCircle, statusDuration, onUseToilet }) {
+function PlayerPanel({ players, currentIdx, toilets, activeStatuses, onUseToilet }) {
   return (
     <div className="bg-white/90 rounded-2xl p-3 border border-purple-50 shadow-sm">
       <p className="text-xs font-bold text-text-secondary mb-2 flex items-center gap-1">📋 玩家状态面板</p>
@@ -331,17 +406,14 @@ function PlayerPanel({ players, currentIdx, toilets, activeStatuses, currentCirc
                   {isCurrent ? '▶ ' : ''}{name}
                 </span>
                 <div className="flex gap-1 flex-wrap">
-                  {pStatuses.map((s, i) => {
-                    const remaining = statusDuration - (currentCircle - s.triggerCircle)
-                    return (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-100 text-[10px] font-bold text-purple-700 animate-pulse-glow"
-                      >
-                        {s.emoji} {remaining > 0 ? `${remaining}圈` : '即将失效'}
-                      </span>
-                    )
-                  })}
+                  {pStatuses.map((s, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-100 text-[10px] font-bold text-purple-700 animate-pulse-glow"
+                    >
+                      {s.emoji} 剩{s.remainingTurns}轮
+                    </span>
+                  ))}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
@@ -368,7 +440,8 @@ export default function ThirteenCards() {
   const [phase, setPhase] = useState('setup')
 
   const [players, setPlayers] = useState([])
-  const [statusDuration, setStatusDuration] = useState(3)
+  const [generalDuration, setGeneralDuration] = useState(3)
+  const [ladyDuration, setLadyDuration] = useState(3)
   const [deck, setDeck] = useState([])
   const [round, setRound] = useState(1)
   const [currentPlayerIdx, setCurrentPlayerIdx] = useState(0)
@@ -390,10 +463,11 @@ export default function ThirteenCards() {
     }, 4000)
   }, [])
 
-  const handleStart = useCallback((names, duration) => {
+  const handleStart = useCallback((names, genDur, ladyDur) => {
     const newDeck = fisherYatesShuffle(createDeck())
     setPlayers(names)
-    setStatusDuration(duration)
+    setGeneralDuration(genDur)
+    setLadyDuration(ladyDur)
     setDeck(newDeck)
     setRound(1)
     setCurrentPlayerIdx(0)
@@ -440,48 +514,63 @@ export default function ThirteenCards() {
       if (rule.isInventory) {
         setToilets(prev => ({ ...prev, [playerName]: (prev[playerName] || 0) + 1 }))
         addToast(`🚽 ${playerName} 获得一张厕所牌！`, 'success')
-        playSound('status')
+        playSound('toilet')
       }
 
       if (rule.isStatus) {
-        const statusInfo = STATUS_MAP[card.value]
+        const statusInfo = STATUS_INFO[card.value]
+        const duration = rule.statusGroup === 'lady' ? ladyDuration : generalDuration
         setActiveStatuses(prev => [...prev, {
           player: playerName,
           type: statusInfo.type,
           typeName: statusInfo.name,
           emoji: rule.emoji,
-          triggerCircle: currentCircle,
+          remainingTurns: duration,
         }])
-        addToast(`${rule.emoji} ${playerName} 触发了【${statusInfo.name}】效果！`, 'status')
+        addToast(`${rule.emoji} ${playerName} 触发了【${statusInfo.name}】！持续 ${duration} 轮`, 'status')
         playSound('status')
       }
     }, 800)
-  }, [currentCard, deck, round, players, currentPlayerIdx, currentCircle, addToast])
+  }, [currentCard, deck, round, players, currentPlayerIdx, generalDuration, ladyDuration, addToast])
 
+  // 核心：切换回合时，只对【即将行动的玩家】的持续状态扣减剩余轮数
   const nextTurn = useCallback(() => {
     const nextIdx = (currentPlayerIdx + 1) % players.length
-    const newCircle = nextIdx === 0 ? currentCircle + 1 : currentCircle
+    const nextPlayer = players[nextIdx]
 
-    const expired = activeStatuses.filter(s => newCircle - s.triggerCircle >= statusDuration)
-    const remaining = activeStatuses.filter(s => newCircle - s.triggerCircle < statusDuration)
+    const updatedStatuses = []
+    const expiredList = []
 
-    if (expired.length > 0) {
-      expired.forEach((s, i) => {
+    for (const s of activeStatuses) {
+      if (s.player === nextPlayer) {
+        const updated = { ...s, remainingTurns: s.remainingTurns - 1 }
+        if (updated.remainingTurns <= 0) {
+          expiredList.push(s)
+        } else {
+          updatedStatuses.push(updated)
+        }
+      } else {
+        updatedStatuses.push(s)
+      }
+    }
+
+    if (expiredList.length > 0) {
+      expiredList.forEach((s, i) => {
         setTimeout(() => {
           addToast(`⏰ ${s.player} 的【${s.typeName}】效果已解除！`, 'expire')
           playSound('alert')
           haptic('heavy')
         }, i * 600)
       })
-      setActiveStatuses(remaining)
     }
 
+    setActiveStatuses(updatedStatuses)
     setCurrentPlayerIdx(nextIdx)
     if (nextIdx === 0) setCurrentCircle(c => c + 1)
     setCurrentCard(null)
     setIsFlipped(false)
     setShowRule(false)
-  }, [currentPlayerIdx, players.length, currentCircle, activeStatuses, statusDuration, addToast])
+  }, [currentPlayerIdx, players, activeStatuses, addToast])
 
   const useToilet = useCallback((playerName) => {
     if ((toilets[playerName] || 0) <= 0) return
@@ -555,11 +644,7 @@ export default function ThirteenCards() {
 
       {/* Card area */}
       <div className="flex flex-col items-center">
-        <PlayingCard
-          card={currentCard}
-          isFlipped={isFlipped}
-          onDraw={drawCard}
-        />
+        <PlayingCard card={currentCard} isFlipped={isFlipped} onDraw={drawCard} />
         {showRule && <RuleBanner rule={cardRule} />}
       </div>
 
@@ -579,8 +664,6 @@ export default function ThirteenCards() {
         currentIdx={currentPlayerIdx}
         toilets={toilets}
         activeStatuses={activeStatuses}
-        currentCircle={currentCircle}
-        statusDuration={statusDuration}
         onUseToilet={useToilet}
       />
     </div>

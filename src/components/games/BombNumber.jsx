@@ -5,33 +5,70 @@ import { haptic } from '../../utils/haptic'
 function playBoom() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = 'sawtooth'
-    osc.frequency.value = 120
-    gain.gain.value = 0.5
-    osc.start()
-    setTimeout(() => { osc.frequency.value = 60 }, 80)
-    setTimeout(() => { osc.frequency.value = 30 }, 200)
-    setTimeout(() => { gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5) }, 300)
-    setTimeout(() => { osc.stop(); ctx.close() }, 600)
+    const now = ctx.currentTime
+    const rumble = ctx.createOscillator()
+    const rumbleG = ctx.createGain()
+    rumble.type = 'sawtooth'
+    rumble.connect(rumbleG)
+    rumbleG.connect(ctx.destination)
+    rumble.frequency.setValueAtTime(80, now)
+    rumble.frequency.exponentialRampToValueAtTime(20, now + 0.6)
+    rumbleG.gain.setValueAtTime(0.4, now)
+    rumbleG.gain.exponentialRampToValueAtTime(0.01, now + 0.8)
+    rumble.start(now)
+    rumble.stop(now + 0.8)
+    const burst = ctx.createOscillator()
+    const burstG = ctx.createGain()
+    burst.type = 'square'
+    burst.connect(burstG)
+    burstG.connect(ctx.destination)
+    burst.frequency.setValueAtTime(200, now)
+    burst.frequency.exponentialRampToValueAtTime(40, now + 0.4)
+    burstG.gain.setValueAtTime(0.3, now)
+    burstG.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+    burst.start(now)
+    burst.stop(now + 0.5)
+    const crack = ctx.createOscillator()
+    const crackG = ctx.createGain()
+    crack.type = 'sawtooth'
+    crack.connect(crackG)
+    crackG.connect(ctx.destination)
+    crack.frequency.setValueAtTime(600, now)
+    crack.frequency.exponentialRampToValueAtTime(100, now + 0.15)
+    crackG.gain.setValueAtTime(0.25, now)
+    crackG.gain.exponentialRampToValueAtTime(0.01, now + 0.2)
+    crack.start(now)
+    crack.stop(now + 0.2)
+    setTimeout(() => ctx.close(), 1000)
   } catch { /* unsupported */ }
 }
 
 function playTick() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const now = ctx.currentTime
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
+    osc.type = 'sine'
     osc.connect(gain)
     gain.connect(ctx.destination)
-    osc.type = 'sine'
-    osc.frequency.value = 500
-    gain.gain.value = 0.1
-    osc.start()
-    setTimeout(() => { osc.stop(); ctx.close() }, 60)
+    osc.frequency.setValueAtTime(600, now)
+    osc.frequency.exponentialRampToValueAtTime(400, now + 0.1)
+    gain.gain.setValueAtTime(0.15, now)
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12)
+    osc.start(now)
+    osc.stop(now + 0.12)
+    const tap = ctx.createOscillator()
+    const tapG = ctx.createGain()
+    tap.type = 'triangle'
+    tap.connect(tapG)
+    tapG.connect(ctx.destination)
+    tap.frequency.value = 1000
+    tapG.gain.setValueAtTime(0.08, now + 0.05)
+    tapG.gain.exponentialRampToValueAtTime(0.01, now + 0.1)
+    tap.start(now + 0.05)
+    tap.stop(now + 0.1)
+    setTimeout(() => ctx.close(), 200)
   } catch { /* unsupported */ }
 }
 
@@ -73,6 +110,15 @@ export default function BombNumber() {
     haptic('light')
   }, [])
 
+  const triggerBoom = useCallback(() => {
+    setPhase('boom')
+    setBoomFlash(true)
+    playBoom()
+    haptic('heavy')
+    try { navigator.vibrate?.([100, 50, 100, 50, 200, 100, 400]) } catch {}
+    setTimeout(() => setBoomFlash(false), 2000)
+  }, [])
+
   const handleConfirm = useCallback(() => {
     const guess = parseInt(input, 10)
     if (isNaN(guess) || guess < low || guess > high) {
@@ -86,26 +132,28 @@ export default function BombNumber() {
     setInput('')
 
     if (guess === bomb) {
-      setPhase('boom')
-      setBoomFlash(true)
-      playBoom()
-      haptic('heavy')
-      try { navigator.vibrate?.([100, 50, 100, 50, 200, 100, 400]) } catch {}
-      setTimeout(() => setBoomFlash(false), 2000)
+      triggerBoom()
+      return
+    }
+
+    const newLow = guess < bomb ? guess + 1 : low
+    const newHigh = guess > bomb ? guess - 1 : high
+
+    // 范围缩到只剩炸弹本身 → 等同踩中，直接爆炸
+    if (newLow === newHigh) {
+      setLow(newLow)
+      setHigh(newHigh)
+      triggerBoom()
       return
     }
 
     playTick()
     setShrinking(true)
     setTimeout(() => setShrinking(false), 300)
-
-    if (guess < bomb) {
-      setLow(guess + 1)
-    } else {
-      setHigh(guess - 1)
-    }
+    setLow(newLow)
+    setHigh(newHigh)
     haptic('medium')
-  }, [input, low, high, bomb])
+  }, [input, low, high, bomb, triggerBoom])
 
   // ─── Boom Screen ───
   if (phase === 'boom') {
@@ -204,9 +252,7 @@ export default function BombNumber() {
         {/* Number keypad */}
         <div className="grid grid-cols-3 gap-2">
           {NUM_KEYS.map((key, idx) => {
-            if (key === null) {
-              return <div key={idx} />
-            }
+            if (key === null) return <div key={idx} />
             if (key === 'del') {
               return (
                 <button
